@@ -40,3 +40,13 @@
 .profile-area{display:flex;align-items:center;gap:12px}.share-trigger{height:38px;border:1px solid #e5e8ed;background:white;border-radius:9px;padding:0 12px;display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600}.share-dialog{max-width:500px}.share-form{display:flex;flex-direction:column;gap:10px;margin-top:15px}.share-members{margin-top:22px;border-top:1px solid #e5e8ed;padding-top:15px}.share-members h3{font-size:13px}.share-person{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #eff1f4;padding:10px 0}.share-person div{display:flex;flex-direction:column;gap:4px}.share-person strong{font-size:12px}.share-person small{font-size:11px;color:#8e96a1}@media(max-width:650px){.share-trigger{width:38px;padding:0;justify-content:center}.share-trigger span{display:none}}
 
 .space-switcher{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}.space-option{min-height:39px}.space-option span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.library-label{margin-top:18px!important}
+
+.category-picker{position:relative}
+.category-picker-trigger{width:100%;min-height:43px;border:1px solid #dfe4eb;border-radius:9px;padding:0 12px;background:#fff;display:flex;align-items:center;justify-content:space-between;text-align:left;font-size:13px}
+.category-option-label{display:flex;gap:9px;align-items:center;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.category-option-label i{display:block;width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.category-option-label .no-category-color{background:transparent;border:1px solid #b5bdc8}
+.picker-chevron{transform:rotate(90deg);transition:transform .15s}.picker-chevron.open{transform:rotate(-90deg)}
+.category-picker-list{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:125;max-height:235px;overflow-y:auto;border:1px solid #e3e7ed;border-radius:10px;background:#fff;padding:5px;box-shadow:0 12px 25px #18213220}
+.category-picker-list button{width:100%;display:flex;align-items:center;justify-content:space-between;min-height:35px;padding:8px 9px;border-radius:7px;text-align:left;font-size:12px}
+.category-picker-list button:hover,.category-picker-list button.picked{background:#f0f3f7}
