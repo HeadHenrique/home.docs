@@ -103,7 +103,7 @@ function Avatar({user}){
  useEffect(()=>{let active=true,objectUrl;setUrl(null);if(!path)return;
  supabase.storage.from('home-docs').download(path).then(({data,error})=>{if(!error&&data&&active){objectUrl=URL.createObjectURL(data);setUrl(objectUrl)}}).catch(()=>{});
  return()=>{active=false;if(objectUrl)URL.revokeObjectURL(objectUrl)};
- },[path]);
+ },[path,user?.user_metadata?.avatar_updated_at]);
  return url?<img src={url} alt="Foto de perfil" className="avatar-photo"/>:<UserRound size={22}/>;
 }
 async function compressAvatar(file){
