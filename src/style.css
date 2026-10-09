@@ -50,3 +50,23 @@
 .category-picker-list{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:125;max-height:235px;overflow-y:auto;border:1px solid #e3e7ed;border-radius:10px;background:#fff;padding:5px;box-shadow:0 12px 25px #18213220}
 .category-picker-list button{width:100%;display:flex;align-items:center;justify-content:space-between;min-height:35px;padding:8px 9px;border-radius:7px;text-align:left;font-size:12px}
 .category-picker-list button:hover,.category-picker-list button.picked{background:#f0f3f7}
+
+/* Basic PDF editor */
+.pdf-editor{display:flex;flex-direction:column;flex:1;min-height:0;background:#eef0f3}
+.pdf-editor-tools{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 16px;background:white;border-bottom:1px solid #e2e6ec}
+.pdf-editor-tools>button,.pdf-editor-group button{display:inline-flex;align-items:center;gap:6px;border:1px solid #e4e8ef;border-radius:8px;min-height:35px;padding:0 10px;font-size:12px}
+.pdf-editor-group{display:flex;gap:4px}.pdf-editor-group button.active{background:#e9eef6;border-color:#aebacc}
+.pdf-editor-tools>input:not([type=color]){height:35px;border:1px solid #e0e5ec;border-radius:8px;padding:0 9px;font-size:12px;min-width:100px;flex:1}
+.pdf-editor-tools>input[type=number]{flex:0 0 65px;min-width:65px}
+.pdf-editor-tools>input[type=color]{width:35px;height:35px;border:0;background:transparent;cursor:pointer}
+.pdf-editor-tools select{height:35px;padding:0 7px;border:1px solid #e0e5ec;border-radius:8px;font-size:12px}
+.pdf-editor-tools .primary-btn{background:#252a33;color:white}
+.pdf-editor-hint{padding:9px 17px;text-align:center;font-size:11px;color:#697384}
+.pdf-editor-error{padding:8px 15px;text-align:center;background:#fff0f0;color:#ad3434;font-size:12px}
+.pdf-editor-workspace{flex:1;min-height:0;overflow:auto;display:flex;align-items:flex-start;justify-content:center;padding:20px}
+.pdf-editor-sheet{position:relative;width:max-content;max-width:100%;background:white;box-shadow:0 6px 25px #1f2a3b28;cursor:crosshair}
+.pdf-editor-sheet canvas{display:block;max-width:100%;height:auto}
+.pdf-editor-mark{position:absolute;pointer-events:none;white-space:pre-wrap;max-width:75%;line-height:1.25;transform:translateY(-100%)}
+.pdf-editor-mark.cover{width:24%;height:26px;transform:translateY(-100%);background:#fff;border:1px dashed #ccc}
+.pdf-editor-pagination{min-height:45px;padding:8px;display:flex;gap:12px;align-items:center;justify-content:center;background:#fff;border-top:1px solid #e3e6eb;font-size:12px}
+.pdf-editor-pagination button{display:grid;place-items:center;padding:4px}.pdf-editor-pagination span{color:#8490a0}
