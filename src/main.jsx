@@ -4,7 +4,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.m
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import{createRoot}from'react-dom/client';
 import{PDFDocument,StandardFonts,rgb}from'pdf-lib';
-import{House,Folder,FolderPlus,FileText,Image as ImageIcon,Upload,Search,Grid2X2,List,MoreHorizontal,Download,Trash2,Pencil,Move,Tags,Files,ChevronRight,ChevronLeft,X,Check,Plus,ArrowLeft,RotateCcw,Menu,Eye,CheckSquare,AlignLeft,FilePlus,GripVertical}from'lucide-react';
+import{House,Folder,FolderPlus,FileText,Image as ImageIcon,Upload,Search,Grid2X2,List,MoreHorizontal,Download,Trash2,Pencil,Move,Tags,Files,ChevronRight,ChevronLeft,X,Check,Plus,ArrowLeft,RotateCcw,Menu,Eye,CheckSquare,AlignLeft,FilePlus,GripVertical,Settings,LogOut,Camera,UserRound}from'lucide-react';
 import './style.css';
 
 const uid=()=>crypto.randomUUID(),extension=n=>(n.split('.').pop()||'').toLowerCase(),fmt=b=>b<1024?b+' B':b<1048576?(b/1024).toFixed(1)+' KB':(b/1048576).toFixed(1)+' MB';
@@ -13,7 +13,8 @@ function friendly(e){return e==='pdf'?'PDF':e==='txt'?'TXT':['png','jpg','jpeg']
 function safeName(n){return(n||'Documento').replace(/[\\/:*?"<>|]/g,'-').trim()||'Documento'}
 const palette=['#e8b96d','#91b9b5','#aaa0dc','#e2a6a3','#86a8d1','#c4a0bc'];
 function IconFile({file,size=24}){const ext=extension(file.name);return ext==='pdf'?<FileText size={size} color="#c36963"/>:ext==='txt'?<AlignLeft size={size} color="#76a18c"/>:<ImageIcon size={size} color="#8098c9"/>}
-function Library({onLogout}){
+function Library({onLogout,user}){
+ const [profileMenu,setProfileMenu]=useState(false),[settingsOpen,setSettingsOpen]=useState(false);
  const [categoryColor,setCategoryColor]=useState('#aaa0dc');
  const [hexInput,setHexInput]=useState('#aaa0dc');
  const [items,setItems]=useState([]),[folder,setFolder]=useState(null),[view,setView]=useState('grid'),[filter,setFilter]=useState('all'),[query,setQuery]=useState(''),[selected,setSelected]=useState([]),[modal,setModal]=useState(null),[draft,setDraft]=useState(''),[preview,setPreview]=useState(null),[mergeOrder,setMergeOrder]=useState([]),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[menu,setMenu]=useState(null),[sidebar,setSidebar]=useState(false),[drag,setDrag]=useState(false);
@@ -51,9 +52,9 @@ function Library({onLogout}){
  <div className="options-wrap"><button className="more" title="Opções" onClick={e=>{e.stopPropagation();setMenu(menu===item.id?null:item.id)}}><MoreHorizontal size={19}/></button>{menu===item.id&&itemMenu(item)}</div>
  </div>}
  return <div className="app" onClick={()=>{if(menu)setMenu(null)}}>
- <aside className={'sidebar '+(sidebar?'expanded':'')}><div className="brand" onClick={()=>goFolder(null)}><div className="logo"><House size={19}/></div><span>home<b>.docs</b></span></div><div className="nav-title">BIBLIOTECA</div><button className={'nav '+(filter==='all'?'active':'')} onClick={()=>{setFolder(null);setFilter('all');setSidebar(false);setSelected([])}}><Folder size={18}/> Meus arquivos</button><button className={'nav '+(filter==='uncategorized'?'active':'')} onClick={()=>{setFilter('uncategorized');setFolder(null);setSidebar(false)}}><FileText size={18}/> Sem categoria</button><div className="nav-title section-title">CATEGORIAS <button onClick={()=>startModal('category')} title="Nova categoria"><Plus size={17}/></button></div>{categories.map(c=><button className={'nav cat '+(filter===c.id?'active':'')} key={c.id} onClick={()=>{setFilter(c.id);setFolder(null);setSidebar(false)}}><i style={{background:c.color}}/>{c.name}</button>)}<div className="aside-bottom"><button className="nav" onClick={onLogout}>Sair da conta</button><button className={'nav '+(inTrash?'active':'')} onClick={()=>{setFilter('trash');setFolder(null);setSidebar(false)}}><Trash2 size={18}/> Lixeira</button><div className="aside-note">Arquivos protegidos e sincronizados<br/>pelo Supabase.</div></div></aside>
+ <aside className={'sidebar '+(sidebar?'expanded':'')}><div className="brand" onClick={()=>goFolder(null)}><div className="logo"><House size={19}/></div><span>home<b>.docs</b></span></div><div className="nav-title">BIBLIOTECA</div><button className={'nav '+(filter==='all'?'active':'')} onClick={()=>{setFolder(null);setFilter('all');setSidebar(false);setSelected([])}}><Folder size={18}/> Meus arquivos</button><button className={'nav '+(filter==='uncategorized'?'active':'')} onClick={()=>{setFilter('uncategorized');setFolder(null);setSidebar(false)}}><FileText size={18}/> Sem categoria</button><div className="nav-title section-title">CATEGORIAS <button onClick={()=>startModal('category')} title="Nova categoria"><Plus size={17}/></button></div>{categories.map(c=><button className={'nav cat '+(filter===c.id?'active':'')} key={c.id} onClick={()=>{setFilter(c.id);setFolder(null);setSidebar(false)}}><i style={{background:c.color}}/>{c.name}</button>)}<div className="aside-bottom"><button className={'nav '+(inTrash?'active':'')} onClick={()=>{setFilter('trash');setFolder(null);setSidebar(false)}}><Trash2 size={18}/> Lixeira</button><div className="aside-note">Arquivos protegidos e sincronizados<br/>pelo Supabase.</div></div></aside>
  <main className="content" onDragOver={e=>{e.preventDefault();setDrag(true)}} onDragLeave={e=>{if(!e.currentTarget.contains(e.relatedTarget))setDrag(false)}} onDrop={e=>{e.preventDefault();setDrag(false);addFiles(e.dataTransfer.files)}}>
- <header className="topbar"><button className="mobile-menu" onClick={()=>setSidebar(!sidebar)}><Menu size={21}/></button><div className="crumb"><button onClick={()=>goFolder(null)}>Biblioteca</button>{current&&<><ChevronRight size={15}/><span>{current.name}</span></>}</div></header>
+ <header className="topbar"><button className="mobile-menu" onClick={()=>setSidebar(!sidebar)}><Menu size={21}/></button><div className="crumb"><button onClick={()=>goFolder(null)}>Biblioteca</button>{current&&<><ChevronRight size={15}/><span>{current.name}</span></>}</div><div className="profile-area"><button type="button" className="avatar-trigger" aria-label="Abrir menu do perfil" aria-expanded={profileMenu} onClick={()=>setProfileMenu(v=>!v)}><Avatar user={user}/></button>{profileMenu&&<div className="profile-dropdown"><div className="profile-identity"><strong>{user.email}</strong><small>Minha conta</small></div><button onClick={()=>{setSettingsOpen(true);setProfileMenu(false)}}><Settings size={16}/> Configurações</button><button onClick={()=>{setProfileMenu(false);onLogout()}}><LogOut size={16}/> Sair da conta</button></div>}</div></header>
  <section className="heading"><div><h1>{inTrash?'Lixeira':filter==='uncategorized'?'Sem categoria':filter!=='all'?categories.find(c=>c.id===filter)?.name:current?.name||'Minha biblioteca'}</h1><p>Seus arquivos organizados, do seu jeito.</p></div></section>
  <div className="controls"><div className="search-box"><Search size={18}/><input placeholder="Buscar pastas e documentos..." value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button onClick={()=>setQuery('')}><X size={16}/></button>}</div><div className="switch"><button title="Grade" className={view==='grid'?'active':''} onClick={()=>setView('grid')}><Grid2X2 size={18}/></button><button title="Lista" className={view==='list'?'active':''} onClick={()=>setView('list')}><List size={18}/></button></div><div className="top-actions"><button className="subtle-btn" onClick={()=>startModal('folder')}><FolderPlus size={17}/> <span>Nova pasta</span></button><button className="primary-btn" onClick={()=>pick.current?.click()}><Plus size={18}/> Adicionar arquivos</button><input type="file" multiple accept=".pdf,.txt,.png,.jpg,.jpeg" ref={pick} style={{display:'none'}} onChange={e=>{addFiles(e.target.files);e.target.value=''}}/></div></div>
  {selected.length>0&&!inTrash&&<div className="selection-bar"><strong>{selected.length} selecionado(s)</strong><button onClick={()=>setSelected([])}>Limpar</button><button className="primary-btn" disabled={chosen.length<2} onClick={startMerge}><Files size={17}/> Juntar documentos</button></div>}
@@ -61,6 +62,7 @@ function Library({onLogout}){
  <section className="section"><div className="section-heading"><h2>{inTrash?'Itens excluídos':'Documentos'}</h2><span>{shownFiles.length}</span></div>{shownFiles.length?<div className={'tiles '+view}>{shownFiles.map(item=>inTrash?<div key={item.id} className="trash-item"><IconFile file={item}/><span>{item.name}</span><button onClick={()=>restore(item.id)}>Restaurar</button><button onClick={()=>removeForever(item.id)}>Excluir definitivamente</button></div>:tile(item))}</div>:<div className="empty"><div><Files size={38} strokeWidth={1.3}/></div><h3>{inTrash?'A lixeira está vazia':'Nenhum documento por aqui'}</h3><p>{inTrash?'Os arquivos excluídos aparecem aqui.':'Envie um PDF, imagem ou TXT para começar.'}</p>{!inTrash&&<button className="primary-btn" onClick={()=>pick.current?.click()}><Upload size={16}/> Adicionar arquivos</button>}</div>}</section>
  {drag&&<div className="drop-overlay"><Upload size={44}/><h2>Solte seus documentos aqui</h2></div>}
  </main>
+ {settingsOpen&&<ProfileSettings user={user} close={()=>setSettingsOpen(false)}/>}
  {notice&&<div className="toast">{notice}</div>}
  {busy&&<div className="busy">Processando documentos...</div>}
  {preview&&<Preview file={preview} close={()=>setPreview(null)} download={()=>download(preview)} rename={()=>{startModal('rename',preview);setPreview(null)}}/>}
@@ -94,12 +96,65 @@ function Thumbnail({file,accent}){
  return src?<img className={ext==='pdf'?'pdf-cover':''} src={src} alt={'Prévia de '+file.name}/>:<IconFile file={file} size={39}/>;
 }
 function Preview({file,close,download,rename}){const [url,setUrl]=useState(null),[text,setText]=useState('');const ext=extension(file.name);useEffect(()=>{const u=URL.createObjectURL(file.blob);setUrl(u);if(ext==='txt')file.blob.text().then(setText);return()=>URL.revokeObjectURL(u)},[file]);return <div className="viewer"><div className="viewer-top"><button onClick={close}><ArrowLeft size={20}/></button><div className="viewer-name"><strong>{file.name}</strong><small>{friendly(ext)} · {fmt(file.size)}</small></div><button onClick={rename} title="Renomear"><Pencil size={19}/></button><button onClick={download} title="Baixar"><Download size={19}/></button><button onClick={close} title="Fechar"><X size={21}/></button></div><div className="viewer-body">{url&&(ext==='pdf'?<iframe src={url+'#toolbar=1'} title={file.name}/>:ext==='txt'?<pre>{text}</pre>:<img src={url} alt={file.name}/>)}</div></div>}
+
+function Avatar({user}){
+ const [url,setUrl]=useState(null);
+ const path=user?.user_metadata?.avatar_path;
+ useEffect(()=>{let active=true,objectUrl;setUrl(null);if(!path)return;
+ supabase.storage.from('home-docs').download(path).then(({data,error})=>{if(!error&&data&&active){objectUrl=URL.createObjectURL(data);setUrl(objectUrl)}}).catch(()=>{});
+ return()=>{active=false;if(objectUrl)URL.revokeObjectURL(objectUrl)};
+ },[path]);
+ return url?<img src={url} alt="Foto de perfil" className="avatar-photo"/>:<UserRound size={22}/>;
+}
+async function compressAvatar(file){
+ if(!file.type.startsWith('image/'))throw Error('Selecione uma imagem válida.');
+ const bitmap=await createImageBitmap(file);
+ try{
+ const scale=Math.min(1,512/Math.max(bitmap.width,bitmap.height));
+ const canvas=document.createElement('canvas');canvas.width=Math.round(bitmap.width*scale);canvas.height=Math.round(bitmap.height*scale);
+ canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);
+ let quality=.82,blob;
+ do{blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',quality));quality-=.12}while(blob&&blob.size>200000&&quality>.28);
+ if(!blob)throw Error('Não foi possível processar a imagem.');
+ return blob;
+ }finally{bitmap.close()}
+}
+function ProfileSettings({user,close}){
+ const [password,setPassword]=useState(''),[confirm,setConfirm]=useState(''),[busy,setBusy]=useState(false),[feedback,setFeedback]=useState(''),[photoPreview,setPhotoPreview]=useState(null);
+ const input=useRef(null),localUrl=useRef(null);
+ useEffect(()=>()=>{if(localUrl.current)URL.revokeObjectURL(localUrl.current)},[]);
+ async function photo(file){
+  if(!file)return;setBusy(true);setFeedback('');
+  try{
+   const blob=await compressAvatar(file);
+   const path=user.id+'/profile/avatar.jpg';
+   const {error}=await supabase.storage.from('home-docs').upload(path,blob,{upsert:true,contentType:'image/jpeg',cacheControl:'0'});
+   if(error)throw error;
+   const {error:authError}=await supabase.auth.updateUser({data:{avatar_path:path,avatar_updated_at:Date.now()}});
+   if(authError)throw authError;
+   if(localUrl.current)URL.revokeObjectURL(localUrl.current);
+   localUrl.current=URL.createObjectURL(blob);setPhotoPreview(localUrl.current);setFeedback('Foto de perfil salva na nuvem.');
+  }catch(e){setFeedback('Erro ao salvar foto: '+e.message)}
+  finally{setBusy(false)}
+ }
+ async function updatePassword(e){
+  e.preventDefault();if(password.length<8){setFeedback('A senha deve ter pelo menos 8 caracteres.');return}if(password!==confirm){setFeedback('As senhas não coincidem.');return}
+  setBusy(true);setFeedback('');
+  try{const {error}=await supabase.auth.updateUser({password});if(error)throw error;setPassword('');setConfirm('');setFeedback('Senha atualizada com sucesso.')}
+  catch(e){setFeedback(e.message)}finally{setBusy(false)}
+ }
+ return <div className="overlay" onMouseDown={e=>{if(e.target===e.currentTarget)close()}}><div className="dialog settings-dialog"><div className="dialog-header"><h2>Configurações</h2><button onClick={close} aria-label="Fechar"><X size={20}/></button></div>
+ <div className="settings-avatar-line"><div className="settings-avatar">{photoPreview?<img src={photoPreview} alt="Nova foto"/>:<Avatar user={user}/>}</div><div><strong>Foto de perfil</strong><p>JPG, PNG ou WebP. A imagem é comprimida automaticamente.</p><button className="subtle-btn" disabled={busy} onClick={()=>input.current?.click()}><Camera size={15}/> Alterar foto</button><input ref={input} type="file" accept="image/jpeg,image/png,image/webp" hidden onChange={e=>{photo(e.target.files?.[0]);e.target.value=''}}/></div></div>
+ <form onSubmit={updatePassword} className="settings-password"><h3>Alterar senha</h3><label>Nova senha</label><input type="password" minLength={8} autoComplete="new-password" value={password} onChange={e=>setPassword(e.target.value)} required/><label>Confirmar senha</label><input type="password" minLength={8} autoComplete="new-password" value={confirm} onChange={e=>setConfirm(e.target.value)} required/><button className="primary-btn" disabled={busy}>Salvar nova senha</button></form>
+ {feedback&&<p role="status" className="settings-feedback">{feedback}</p>}</div></div>;
+}
+
 function App(){
  const [user,setUser]=useState(undefined),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[loading,setLoading]=useState(false),[feedback,setFeedback]=useState(''),[register,setRegister]=useState(false);
  useEffect(()=>{supabase.auth.getUser().then(({data})=>setUser(data.user||null)).catch(()=>setUser(null));const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>setUser(session?.user||null));return()=>subscription.unsubscribe()},[]);
  async function submit(e){e.preventDefault();setLoading(true);setFeedback('');try{const result=register?await supabase.auth.signUp({email,password}):await supabase.auth.signInWithPassword({email,password});if(result.error)throw result.error;if(register&&!result.data.session)setFeedback('Confira seu e-mail para confirmar o cadastro.')}catch(e){setFeedback(e.message)}finally{setLoading(false)}}
  if(user===undefined)return <div className="auth-screen">Conectando à home.docs...</div>;
  if(!user)return <div className="auth-screen"><form className="auth-card" onSubmit={submit}><div className="auth-logo"><House size={22}/></div><h1>home<span>.docs</span></h1><p>Sua biblioteca de documentos na nuvem.</p><label>E-mail</label><input type="email" required autoComplete="email" value={email} onChange={e=>setEmail(e.target.value)} placeholder="seu@email.com"/><label>Senha</label><input type="password" required minLength={6} autoComplete={register?'new-password':'current-password'} value={password} onChange={e=>setPassword(e.target.value)} placeholder="Sua senha"/>{feedback&&<div className="auth-feedback">{feedback}</div>}<button className="primary-btn" disabled={loading}>{loading?'Aguarde...':register?'Criar conta':'Entrar'}</button><button type="button" className="auth-toggle" onClick={()=>{setRegister(!register);setFeedback('')}}>{register?'Já possui conta? Entrar':'Não possui conta? Criar cadastro'}</button></form></div>;
- return <Library key={user.id} onLogout={async()=>{await supabase.auth.signOut();setUser(null)}}/>;
+ return <Library key={user.id} user={user} onLogout={async()=>{await supabase.auth.signOut();setUser(null)}}/>;
 }
 createRoot(document.getElementById('root')).render(<App/>);
