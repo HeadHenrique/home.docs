@@ -12,7 +12,7 @@ export async function transaction(method,item,workspaceId){
  if(method==='put'){
   const original=item.storage_path||null;
   let path=original;
-  if(item.kind==='file'&&item.blob&&!path){path=ownerId+'/'+item.id+'/'+encodeURIComponent(item.name);const {error}=await supabase.storage.from(bucket).upload(path,item.blob,{contentType:item.mime||item.blob.type||'application/octet-stream',upsert:false});if(error)throw error}
+  if(item.kind==='file'&&item.blob&&!path){const ext=(item.name?.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'')||'bin';path=ownerId+'/'+item.id+'/document.'+ext;const mime=ext==='pdf'?'application/pdf':ext==='txt'?'text/plain':ext==='png'?'image/png':['jpg','jpeg'].includes(ext)?'image/jpeg':'application/octet-stream';const {error}=await supabase.storage.from(bucket).upload(path,item.blob,{contentType:mime,upsert:false});if(error)throw new Error('Storage: '+error.message)}
   const record={id:item.id,user_id:ownerId,kind:item.kind,name:item.name,parent:item.parent||null,folder:item.folder||null,category:item.category||null,color:item.color||null,size:item.size||0,mime:item.mime||null,storage_path:path,created_at:new Date(item.created||Date.now()).toISOString(),deleted:!!item.deleted};
   const {error}=await supabase.from('hd_items').upsert(record,{onConflict:'id'});if(error)throw error;return item.id
  }
