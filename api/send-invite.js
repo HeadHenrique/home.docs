@@ -1,12 +1,12 @@
 import {createClient} from '@supabase/supabase-js';
 export default async function handler(req,res){
  if(req.method!=='POST'){res.setHeader('Allow','POST');return res.status(405).json({error:'Método não permitido.'})}
- const {RESEND_API_KEY,RESEND_FROM_EMAIL,SUPABASE_URL,SUPABASE_SERVICE_ROLE_KEY}=process.env;
- if(!RESEND_API_KEY||!RESEND_FROM_EMAIL||!SUPABASE_SERVICE_ROLE_KEY)return res.status(503).json({error:'Integração de e-mail não configurada no servidor.'});
+ const {RESEND_API_KEY,RESEND_FROM_EMAIL,SUPABASE_URL,VITE_SUPABASE_PUBLISHABLE_KEY}=process.env;
+ if(!RESEND_API_KEY||!RESEND_FROM_EMAIL)return res.status(503).json({error:'Integração de e-mail não configurada no servidor.'});
  const token=(req.headers.authorization||'').replace(/^Bearer\s+/i,'');
  if(!token)return res.status(401).json({error:'Sessão não encontrada.'});
  try{
-  const supabase=createClient(SUPABASE_URL||'https://penyfgluluxlhsghntdj.supabase.co',SUPABASE_SERVICE_ROLE_KEY,{auth:{persistSession:false,autoRefreshToken:false}});
+  const supabase=createClient(SUPABASE_URL||'https://penyfgluluxlhsghntdj.supabase.co',VITE_SUPABASE_PUBLISHABLE_KEY||'sb_publishable_GtEyhgXLc3x6KQeBkAEZCg_v_GLrp4b',{auth:{persistSession:false,autoRefreshToken:false},global:{headers:{Authorization:'Bearer '+token}}});
   const {data:{user},error:authError}=await supabase.auth.getUser(token);
   if(authError||!user)return res.status(401).json({error:'Sessão inválida.'});
   const email=String(req.body?.email||'').trim().toLowerCase();
