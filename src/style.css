@@ -87,3 +87,7 @@
 
 /* New home.docs brand */
 .brand{min-height:36px;display:flex;align-items:center}.brand-wordmark{display:block;width:170px;max-width:100%;height:auto;object-fit:contain}
+
+/* Document drag and drop into a folder */
+.tile.folder-drop-target{border:2px dashed #667b9e!important;background:#e9eef9!important;box-shadow:0 0 0 4px rgba(95,118,157,.12);transform:translateY(-2px)}
+.tile[draggable="true"]{cursor:grab}.tile[draggable="true"]:active{cursor:grabbing}
