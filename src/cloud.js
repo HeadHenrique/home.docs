@@ -8,7 +8,7 @@ const decode=x=>({id:x.id,user_id:x.user_id,kind:x.kind,name:x.name,parent:x.par
 export async function transaction(method,item,workspaceId){
  const user=await getUser();
  const ownerId=workspaceId||user.id;
- if(method==='all'){const {data,error}=await supabase.from('hd_items') .select('*').eq('user_id',ownerId).order('created_at',{ascending:false});if(error)throw error;const entries=await Promise.all((data||[]).map(async x=>{const it=decode(x);if(it.kind==='file'&&it.storage_path&&!it.deleted){const {data:blob,error:downloadError}=await supabase.storage.from(bucket).download(it.storage_path);if(downloadError)throw downloadError;it.blob=blob}return it}));return entries}
+ if(method==='all'){const {data,error}=await supabase.from('hd_items').select('id,user_id,kind,name,parent,folder,category,color,size,mime,created_at,deleted,storage_path').eq('user_id',ownerId).order('created_at',{ascending:false});if(error)throw error;return (data||[]).map(decode)}
  if(method==='put'){
   const original=item.storage_path||null;
   let path=original;
@@ -23,3 +23,5 @@ export async function transaction(method,item,workspaceId){
  }
  throw Error('Operação inválida');
 }
+
+export async function getFileBlob(file){if(file.blob)return file.blob;if(!file.storage_path)throw Error('Arquivo sem caminho de armazenamento.');const {data,error}=await supabase.storage.from(bucket).download(file.storage_path);if(error)throw error;return data}
