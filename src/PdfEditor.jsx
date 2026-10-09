@@ -10,7 +10,37 @@ export default function PdfEditor({file,onSave,onCancel}){
  useEffect(()=>{let active=true,task;const load=async()=>{try{task=pdfjs.getDocument({data:new Uint8Array(await file.blob.arrayBuffer())});const pdf=await task.promise;if(active){setDoc(pdf);setCount(pdf.numPages)}}catch(e){if(active)setError('Não foi possível abrir este PDF para edição.')}};load();return()=>{active=false;if(task)task.destroy().catch(()=>{})}},[file.blob]);
  useEffect(()=>{if(!doc||!canvas.current)return;let cancelled=false;let renderTask;async function render(){try{const p=await doc.getPage(page),initial=p.getViewport({scale:1});const scale=Math.min(1.5,Math.max(.45,750/initial.width));const v=p.getViewport({scale});const c=canvas.current;if(!c||cancelled)return;c.width=Math.round(v.width);c.height=Math.round(v.height);renderTask=p.render({canvasContext:c.getContext('2d'),viewport:v});await renderTask.promise;const content=await p.getTextContent();const blocks=content.items.filter(i=>i.str?.trim()&&i.width>0).map((i,n)=>{const t=pdfjs.Util.transform(v.transform,i.transform);const fontSize=Math.hypot(t[2],t[3]);return {id:page+'-'+n,text:i.str,x:t[4]/v.width,y:(t[5]-fontSize)/v.height,width:Math.min(i.width*scale/v.width,1-t[4]/v.width),height:Math.max(fontSize/v.height,.007),size:fontSize/scale,fontFamily:content.styles[i.fontName]?.fontFamily||'sans-serif'}});if(!cancelled)setTextBlocks(blocks)}catch(e){if(!cancelled&&e?.name!=='RenderingCancelledException')setError('Falha ao exibir a página.')}}render();return()=>{cancelled=true;renderTask?.cancel()}},[doc,page]);
 
- useEffect(()=>{const base=canvas.current,layer=overlay.current;if(!base||!layer)return;layer.width=base.width;layer.height=base.height;const ctx=layer.getContext('2d');const background=base.getContext('2d',{willReadFrequently:true});if(!ctx||!background)return;for(const mark of marks.filter(m=>m.page===page&&m.type!=='replace')){const x=mark.x*layer.width,y=mark.y*layer.height;const height=mark.type==='cover'?52:Math.max((mark.height||.025)*layer.height+12,mark.size*2.5);const width=mark.type==='cover'?340:Math.max((mark.width||.05)*layer.width+12,mark.text.length*mark.size*1.4);const top=mark.type==='cover'?y-height:y-5;if(mark.type==='replace'||mark.type==='cover'){const px=background.getImageData(Math.min(base.width-1,Math.max(0,Math.floor(x+2))),Math.min(base.height-1,Math.max(0,Math.floor(top-8))),1,1).data;ctx.fillStyle='rgb('+px[0]+','+px[1]+','+px[2]+')';ctx.fillRect(x-3,Math.max(0,top),Math.min(layer.width-x+3,width),height+8)}if(mark.type!=='cover'&&mark.text){ctx.fillStyle=mark.color;ctx.textBaseline='top';ctx.font=(mark.size*2)+'px '+(mark.font==='TimesRoman'?'Georgia':mark.font==='Courier'?'monospace':'Arial');ctx.fillText(mark.text,x,mark.type==='replace'?y:y-mark.size*2,layer.width-x-6)}}},[marks,page,textBlocks]);
+ useEffect(()=>{
+  const base=canvas.current,layer=overlay.current;
+  if(!base||!layer)return;
+  layer.width=base.width;layer.height=base.height;
+  const ctx=layer.getContext('2d'),background=base.getContext('2d',{willReadFrequently:true});
+  if(!ctx||!background)return;
+  for(const mark of marks.filter(m=>m.page===page)){
+   const x=mark.x*layer.width,y=mark.y*layer.height;
+   const height=mark.type==='cover'?52:Math.max((mark.height||.025)*layer.height+8,mark.size*2);
+   const width=mark.type==='cover'?340:Math.max((mark.width||.05)*layer.width+8,mark.text.length*mark.size*1.2);
+   const top=mark.type==='cover'?y-height:y-3;
+   if(mark.type==='replace'||mark.type==='cover'){
+    const sx=Math.min(base.width-1,Math.max(0,Math.floor(x+2))),sy=Math.min(base.height-1,Math.max(0,Math.floor(top-9)));
+    const px=background.getImageData(sx,sy,1,1).data;
+    ctx.fillStyle='rgb('+px[0]+','+px[1]+','+px[2]+')';
+    ctx.fillRect(x-2,Math.max(0,top),Math.min(layer.width-x+2,width),height+6);
+   }
+   if(mark.type!=='cover'&&mark.text){
+    ctx.fillStyle=mark.color;ctx.textBaseline='top';
+    ctx.font=(mark.size*2)+'px '+(mark.font==='TimesRoman'?'Georgia':mark.font==='Courier'?'monospace':'Arial');
+    ctx.fillText(mark.text,x,mark.type==='replace'?y:y-mark.size*2,layer.width-x-6);
+   }
+  }
+  if(selectedText){
+   const b=selectedText,x=b.x*layer.width,y=b.y*layer.height-3;
+   const sx=Math.min(base.width-1,Math.max(0,Math.round(x+2))),sy=Math.min(base.height-1,Math.max(0,Math.round(y-9)));
+   const px=background.getImageData(sx,sy,1,1).data;
+   ctx.fillStyle='rgb('+px[0]+','+px[1]+','+px[2]+')';
+   ctx.fillRect(x-2,Math.max(0,y),Math.min(layer.width-x+2,b.width*layer.width+8),Math.max(b.height*layer.height+10,10));
+  }
+ },[marks,page,textBlocks,selectedText]);
  const current=marks.filter(m=>m.page===page);const replacements=new Map(current.filter(m=>m.type==='replace').map(m=>[m.sourceId,m]));
  function chooseBlock(block){
   const previous=replacements.get(block.id);
