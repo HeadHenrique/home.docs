@@ -84,3 +84,6 @@
 
 /* Gentle category tint across the entire document card */
 .tile[style*="--cat-accent"]{background-color:var(--cat-soft)!important}.tile[style*="--cat-accent"]:hover{background-color:var(--cat-hover)!important}.tile[style*="--cat-accent"].checked{background-color:var(--cat-hover)!important}
+
+/* New home.docs brand */
+.brand{min-height:36px;display:flex;align-items:center}.brand-wordmark{display:block;width:170px;max-width:100%;height:auto;object-fit:contain}
