@@ -1,4 +1,6 @@
 import {supabase,transaction} from './cloud';
+import * as pdfjs from 'pdfjs-dist';
+pdfjs.GlobalWorkerOptions.workerSrc = new URL('pdfjs-dist/build/pdf.worker.min.mjs',import.meta.url).toString();
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import{createRoot}from'react-dom/client';
 import{PDFDocument,StandardFonts,rgb}from'pdf-lib';
@@ -12,6 +14,7 @@ function safeName(n){return(n||'Documento').replace(/[\\/:*?"<>|]/g,'-').trim()|
 const palette=['#e8b96d','#91b9b5','#aaa0dc','#e2a6a3','#86a8d1','#c4a0bc'];
 function IconFile({file,size=24}){const ext=extension(file.name);return ext==='pdf'?<FileText size={size} color="#c36963"/>:ext==='txt'?<AlignLeft size={size} color="#76a18c"/>:<ImageIcon size={size} color="#8098c9"/>}
 function Library({onLogout}){
+ const [categoryColor,setCategoryColor]=useState('#aaa0dc');
  const [items,setItems]=useState([]),[folder,setFolder]=useState(null),[view,setView]=useState('grid'),[filter,setFilter]=useState('all'),[query,setQuery]=useState(''),[selected,setSelected]=useState([]),[modal,setModal]=useState(null),[draft,setDraft]=useState(''),[preview,setPreview]=useState(null),[mergeOrder,setMergeOrder]=useState([]),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[menu,setMenu]=useState(null),[sidebar,setSidebar]=useState(false),[drag,setDrag]=useState(false);
  const pick=useRef(null);
  const refresh=async()=>setItems(await transaction('all'));useEffect(()=>{refresh().catch(e=>message('Falha ao carregar nuvem: '+e.message))},[]);
@@ -27,8 +30,8 @@ function Library({onLogout}){
  async function change(id,changes){const i=byId(id);if(i)await save({...i,...changes})}
  function goFolder(id){setFolder(id);setFilter('all');setSelected([]);setQuery('');setSidebar(false)}
  function select(id){setSelected(v=>v.includes(id)?v.filter(x=>x!==id):[...v,id])}
- function startModal(type,item){setMenu(null);setDraft(type==='rename'?item.name:'');setModal({type,item})}
- async function create(){const value=draft.trim();if(!value)return;const type=modal.type; if(type==='rename'){await change(modal.item.id,{name:safeName(value)});message('Nome atualizado.')}else{await save({id:uid(),kind:type==='folder'?'folder':'category',name:safeName(value),parent:type==='folder'?folder:null,color:palette[Math.floor(Math.random()*palette.length)],created:Date.now(),deleted:false});message(type==='folder'?'Pasta criada.':'Categoria criada.')}setModal(null);setDraft('')}
+ function startModal(type,item){setMenu(null);setDraft(type==='rename'?item.name:'');setCategoryColor(type==='category'?palette[2]:(item?.color||palette[0]));setModal({type,item})}
+ async function create(){const value=draft.trim();if(!value)return;const type=modal.type; if(type==='rename'){await change(modal.item.id,{name:safeName(value)});message('Nome atualizado.')}else{await save({id:uid(),kind:type==='folder'?'folder':'category',name:safeName(value),parent:type==='folder'?folder:null,color:type==='category'?categoryColor:palette[Math.floor(Math.random()*palette.length)],created:Date.now(),deleted:false});message(type==='folder'?'Pasta criada.':'Categoria criada.')}setModal(null);setDraft('')}
  async function addFiles(list){const chosen=Array.from(list||[]);if(!chosen.length)return;setBusy(true);let count=0;for(const f of chosen){if(!types.includes(extension(f.name))){message('Formato não aceito: '+f.name);continue}try{await transaction('put',{id:uid(),kind:'file',name:safeName(f.name),folder,category:null,blob:f,size:f.size,mime:f.type,created:Date.now(),deleted:false});count++}catch(e){message('Falha ao salvar '+f.name+'. Verifique o espaço disponível.')}}await refresh();setBusy(false);if(count)message(count+' arquivo(s) salvo(s).')}
  useEffect(()=>{const handler=e=>{if(e.target.closest('input,textarea,[contenteditable=true]'))return;const clip=e.clipboardData?.files;if(clip?.length)addFiles(clip)};document.addEventListener('paste',handler);return()=>document.removeEventListener('paste',handler)},[folder]);
  function download(file){const url=URL.createObjectURL(file.blob),a=document.createElement('a');a.href=url;a.download=file.name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
@@ -40,9 +43,9 @@ function Library({onLogout}){
  function startMerge(){setMergeOrder(chosen.map(x=>x.id));setDraft('Documentos reunidos.pdf');setModal({type:'merge'})}
  async function merge(){if(mergeOrder.length<2)return;setBusy(true);try{const pdf=await PDFDocument.create();const font=await pdf.embedFont(StandardFonts.Helvetica);for(const id of mergeOrder){const item=byId(id),ext=extension(item.name),bytes=new Uint8Array(await item.blob.arrayBuffer());if(ext==='pdf'){const source=await PDFDocument.load(bytes);const pages=await pdf.copyPages(source,source.getPageIndices());pages.forEach(p=>pdf.addPage(p))}else if(ext==='png'||ext==='jpg'||ext==='jpeg'){const img=ext==='png'?await pdf.embedPng(bytes):await pdf.embedJpg(bytes);const d=img.scale(1),page=pdf.addPage([595.28,841.89]),scale=Math.min((page.getWidth()-48)/d.width,(page.getHeight()-48)/d.height,1);page.drawImage(img,{x:(page.getWidth()-d.width*scale)/2,y:(page.getHeight()-d.height*scale)/2,width:d.width*scale,height:d.height*scale})}else if(ext==='txt'){const str=await item.blob.text(),lines=str.replace(/\r/g,'').split('\n');let page=pdf.addPage([595.28,841.89]),y=800;for(const line of lines){const normalized=line.normalize('NFKD').replace(/[\u0300-\u036f]/g,'').replace(/[^\x20-\x7e]/g,'?');const chunks=normalized.match(/.{1,85}/g)||[''];for(const chunk of chunks){if(y<48){page=pdf.addPage([595.28,841.89]);y=800}page.drawText(chunk,{x:36,y,size:10,font,color:rgb(.2,.2,.2)});y-=15}}}}const bytes=await pdf.save(),name=safeName(draft.replace(/\.pdf$/i,''))+'.pdf',blob=new Blob([bytes],{type:'application/pdf'});await save({id:uid(),kind:'file',name,folder,category:null,blob,size:blob.size,mime:'application/pdf',created:Date.now(),deleted:false});setModal(null);setSelected([]);message('PDF criado com sucesso.')}catch(e){console.error(e);message('Não foi possível unir os documentos. Verifique se o PDF não está protegido.')}finally{setBusy(false)}}
  function itemMenu(item){return <div className="menu-options"><button onClick={()=>{setMenu(null);item.kind==='folder'?goFolder(item.id):openFile(item)}}><Eye size={16}/> Abrir</button><button onClick={()=>startModal('rename',item)}><Pencil size={16}/> Renomear</button>{item.kind==='file'&&<><button onClick={()=>startModal('move',item)}><Move size={16}/> Mover / categorizar</button><button onClick={()=>{download(item);setMenu(null)}}><Download size={16}/> Baixar</button></>}<button className="danger" onClick={()=>{erase(item.id);setMenu(null)}}><Trash2 size={16}/> Excluir</button></div>}
- function tile(item){const isFolder=item.kind==='folder',checked=selected.includes(item.id);return <div key={item.id} className={'tile '+(checked?'checked ':'')+(view==='list'?'as-list':'')} onClick={()=>isFolder?goFolder(item.id):openFile(item)}>
- <div className={'thumbnail '+(isFolder?'folder-thumb':'')}>{isFolder?<Folder size={42} strokeWidth={1.6} fill={item.color||palette[0]} color={item.color||palette[0]}/>:<Thumbnail file={item}/>}</div>
- <div className="tile-caption"><span className="tile-name" title={item.name}>{item.name}</span><small>{isFolder?'Pasta':friendly(extension(item.name))+' · '+fmt(item.size)}</small></div>
+ function tile(item){const isFolder=item.kind==='folder',checked=selected.includes(item.id),cat=categories.find(c=>c.id===item.category),accent=cat?.color;return <div key={item.id} className={'tile '+(checked?'checked ':'')+(view==='list'?'as-list':'')} style={accent?{'--cat-accent':accent,borderColor:accent+'88'}:undefined} onClick={()=>isFolder?goFolder(item.id):openFile(item)}>
+ <div className={'thumbnail '+(isFolder?'folder-thumb':'')}>{isFolder?<Folder size={42} strokeWidth={1.6} fill={item.color||palette[0]} color={item.color||palette[0]}/>:<Thumbnail file={item} accent={accent}/>}</div>
+ <div className="tile-caption"><span className="tile-name" title={item.name}>{item.name}</span><small>{isFolder?'Pasta':friendly(extension(item.name))+' · '+fmt(item.size)}</small>{cat&&<span className="category-chip" style={{color:cat.color,background:cat.color+'20'}}><i style={{background:cat.color}}/>{cat.name}</span>}</div>
  {!isFolder&&!inTrash&&<button className={'select '+(checked?'active':'')} title="Selecionar" onClick={e=>{e.stopPropagation();select(item.id)}}>{checked?<Check size={13}/>:null}</button>}
  <div className="options-wrap"><button className="more" title="Opções" onClick={e=>{e.stopPropagation();setMenu(menu===item.id?null:item.id)}}><MoreHorizontal size={19}/></button>{menu===item.id&&itemMenu(item)}</div>
  </div>}
@@ -61,13 +64,34 @@ function Library({onLogout}){
  {busy&&<div className="busy">Processando documentos...</div>}
  {preview&&<Preview file={preview} close={()=>setPreview(null)} download={()=>download(preview)} rename={()=>{startModal('rename',preview);setPreview(null)}}/>}
  {modal&&<div className="overlay" onMouseDown={e=>{if(e.target===e.currentTarget)setModal(null)}}><div className="dialog"><div className="dialog-header"><h2>{modal.type==='folder'?'Nova pasta':modal.type==='category'?'Nova categoria':modal.type==='rename'?'Renomear':modal.type==='move'?'Organizar documento':'Juntar documentos'}</h2><button onClick={()=>setModal(null)}><X size={20}/></button></div>
- {['folder','category','rename'].includes(modal.type)&&<form onSubmit={e=>{e.preventDefault();create()}}><label>Nome</label><input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Digite um nome"/><div className="dialog-actions"><button type="button" className="subtle-btn" onClick={()=>setModal(null)}>Cancelar</button><button className="primary-btn">Salvar</button></div></form>}
+ {['folder','category','rename'].includes(modal.type)&&<form onSubmit={e=>{e.preventDefault();create()}}><label>Nome</label><input autoFocus value={draft} onChange={e=>setDraft(e.target.value)} placeholder="Digite um nome"/>{modal.type==='category'&&<><label>Cor da categoria</label><div className="color-row">{palette.map(color=><button key={color} type="button" title={color} className={'color-choice '+(categoryColor===color?'chosen':'')} style={{background:color}} onClick={()=>setCategoryColor(color)}>{categoryColor===color&&<Check size={17} color="#fff"/>}</button>)}<label className="custom-color">Personalizada <input type="color" value={categoryColor} onChange={e=>setCategoryColor(e.target.value)}/></label></div></>}<div className="dialog-actions"><button type="button" className="subtle-btn" onClick={()=>setModal(null)}>Cancelar</button><button className="primary-btn">Salvar</button></div></form>}
  {modal.type==='move'&&<div className="form"><label>Pasta</label><select value={modal.item.folder||''} onChange={e=>change(modal.item.id,{folder:e.target.value||null})}><option value="">Biblioteca (raiz)</option>{folders.map(f=><option value={f.id} key={f.id}>{f.name}</option>)}</select><label>Categoria</label><select value={modal.item.category||''} onChange={e=>change(modal.item.id,{category:e.target.value||null})}><option value="">Sem categoria</option>{categories.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}</select><div className="dialog-actions"><button className="primary-btn" onClick={()=>setModal(null)}>Concluir</button></div></div>}
  {modal.type==='merge'&&<div className="form"><p className="hint">Organize os documentos na ordem desejada. Os originais serão preservados.</p><div className="merge-files">{mergeOrder.map((id,index)=><div className="merge-row" key={id}><GripVertical size={16}/><span>{index+1}. {byId(id)?.name}</span><button disabled={index===0} onClick={()=>setMergeOrder(o=>{const a=[...o];[a[index-1],a[index]]=[a[index],a[index-1]];return a})}>↑</button><button disabled={index===mergeOrder.length-1} onClick={()=>setMergeOrder(o=>{const a=[...o];[a[index+1],a[index]]=[a[index],a[index+1]];return a})}>↓</button></div>)}</div><label>Nome do PDF final</label><input value={draft} onChange={e=>setDraft(e.target.value)}/><div className="dialog-actions"><button className="subtle-btn" onClick={()=>setModal(null)}>Cancelar</button><button className="primary-btn" disabled={busy||!draft.trim()} onClick={merge}><Files size={16}/> Gerar PDF</button></div></div>}
  </div></div>}
  </div>
 }
-function Thumbnail({file}){const ext=extension(file.name),[src,setSrc]=useState(null);useEffect(()=>{if(!['png','jpg','jpeg'].includes(ext))return;const u=URL.createObjectURL(file.blob);setSrc(u);return()=>URL.revokeObjectURL(u)},[file]);return src?<img src={src} alt=""/>:<IconFile file={file} size={39}/>}
+function Thumbnail({file,accent}){
+ const ext=extension(file.name),[src,setSrc]=useState(null);
+ useEffect(()=>{let active=true,url=null,task=null;setSrc(null);
+ (async()=>{try{
+ if(['png','jpg','jpeg'].includes(ext)){url=URL.createObjectURL(file.blob);if(active)setSrc(url)}
+ else if(ext==='pdf'&&file.blob){
+ const bytes=await file.blob.arrayBuffer();
+ task=pdfjs.getDocument({data:new Uint8Array(bytes)});
+ const doc=await task.promise;
+ const page=await doc.getPage(1),viewport=page.getViewport({scale:1});
+ const scale=Math.min(360/viewport.width,460/viewport.height,1.7);
+ const view=page.getViewport({scale});
+ const canvas=document.createElement('canvas');canvas.width=Math.ceil(view.width);canvas.height=Math.ceil(view.height);
+ await page.render({canvasContext:canvas.getContext('2d'),viewport:view}).promise;
+ if(active)setSrc(canvas.toDataURL('image/png'));
+ await doc.destroy();
+ }
+ }catch(e){console.warn('Miniatura indisponível',e)}})();
+ return()=>{active=false;if(url)URL.revokeObjectURL(url)};
+ },[file.blob,file.name,ext]);
+ return src?<img className={ext==='pdf'?'pdf-cover':''} src={src} alt={'Prévia de '+file.name}/>:<IconFile file={file} size={39}/>;
+}
 function Preview({file,close,download,rename}){const [url,setUrl]=useState(null),[text,setText]=useState('');const ext=extension(file.name);useEffect(()=>{const u=URL.createObjectURL(file.blob);setUrl(u);if(ext==='txt')file.blob.text().then(setText);return()=>URL.revokeObjectURL(u)},[file]);return <div className="viewer"><div className="viewer-top"><button onClick={close}><ArrowLeft size={20}/></button><div className="viewer-name"><strong>{file.name}</strong><small>{friendly(ext)} · {fmt(file.size)}</small></div><button onClick={rename} title="Renomear"><Pencil size={19}/></button><button onClick={download} title="Baixar"><Download size={19}/></button><button onClick={close} title="Fechar"><X size={21}/></button></div><div className="viewer-body">{url&&(ext==='pdf'?<iframe src={url+'#toolbar=1'} title={file.name}/>:ext==='txt'?<pre>{text}</pre>:<img src={url} alt={file.name}/>)}</div></div>}
 function App(){
  const [user,setUser]=useState(undefined),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[loading,setLoading]=useState(false),[feedback,setFeedback]=useState(''),[register,setRegister]=useState(false);
