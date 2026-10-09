@@ -70,3 +70,5 @@
 .pdf-editor-mark.cover{width:24%;height:26px;transform:translateY(-100%);background:#fff;border:1px dashed #ccc}
 .pdf-editor-pagination{min-height:45px;padding:8px;display:flex;gap:12px;align-items:center;justify-content:center;background:#fff;border-top:1px solid #e3e6eb;font-size:12px}
 .pdf-editor-pagination button{display:grid;place-items:center;padding:4px}.pdf-editor-pagination span{color:#8490a0}
+
+.pdf-text-target{position:absolute;z-index:3;background:transparent;border:1px solid transparent;cursor:text;padding:0;min-width:5px;min-height:5px}.pdf-text-target:hover,.pdf-text-target:focus{border:1px solid #4579ed;background:#4579ed14;outline:none}.pdf-editor-mark.replacement{z-index:4;display:block;padding:1px;min-width:24px;white-space:nowrap}.pdf-edit-selection{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#edf3ff;padding:9px 16px;font-size:12px}.pdf-edit-selection strong{max-width:250px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.pdf-edit-selection .primary-btn{min-height:33px}
