@@ -37,3 +37,5 @@ A API da Resend não substitui o Supabase para autenticação, armazenamento e p
 - O plano de hospedagem, o domínio de envio e os limites da Resend podem restringir os envios.
 - Nunca envie a chave secreta pelo chat ou faça commit de arquivos `.env`.
 - Para testar a função `/api/send-invite`, use a Vercel, pois o servidor de desenvolvimento Vite isolado não executa automaticamente essa rota.
+
+<!-- Trigger production deployment from current main branch; no application code changes. -->
