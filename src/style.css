@@ -94,3 +94,5 @@
 
 /* Manual invitation link sharing */
 .share-link-result{margin:16px 0;padding:14px;border:1px solid #e1e6ee;border-radius:12px;background:#f8fafc;display:flex;flex-direction:column;gap:9px}.share-link-box{display:flex;gap:8px;min-width:0}.share-link-box input{flex:1;min-width:0;background:#fff}.share-link-box button{display:flex;align-items:center;gap:6px;border:1px solid #dbe0e8;border-radius:8px;background:#fff;padding:0 12px;cursor:pointer;white-space:nowrap}.share-link-result small{color:#657183;line-height:1.5}.share-person-actions{display:flex;align-items:center;gap:5px}
+
+.share-link-box button.copy-link-done{background:#16834a;border-color:#16834a;color:#fff;transition:background .2s ease,border-color .2s ease,color .2s ease}.share-link-box button.copy-link-done:hover{background:#116d3d;border-color:#116d3d}
