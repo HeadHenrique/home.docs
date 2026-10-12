@@ -91,3 +91,6 @@
 /* Document drag and drop into a folder */
 .tile.folder-drop-target{border:2px dashed #667b9e!important;background:#e9eef9!important;box-shadow:0 0 0 4px rgba(95,118,157,.12);transform:translateY(-2px)}
 .tile[draggable="true"]{cursor:grab}.tile[draggable="true"]:active{cursor:grabbing}
+
+/* Manual invitation link sharing */
+.share-link-result{margin:16px 0;padding:14px;border:1px solid #e1e6ee;border-radius:12px;background:#f8fafc;display:flex;flex-direction:column;gap:9px}.share-link-box{display:flex;gap:8px;min-width:0}.share-link-box input{flex:1;min-width:0;background:#fff}.share-link-box button{display:flex;align-items:center;gap:6px;border:1px solid #dbe0e8;border-radius:8px;background:#fff;padding:0 12px;cursor:pointer;white-space:nowrap}.share-link-result small{color:#657183;line-height:1.5}.share-person-actions{display:flex;align-items:center;gap:5px}
